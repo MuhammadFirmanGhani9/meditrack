@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'widget.dart'; // Import file widget.dart
+
+import 'widget.dart';
 
 class JadwalPage extends StatefulWidget {
   const JadwalPage({Key? key}) : super(key: key);
@@ -11,228 +12,277 @@ class JadwalPage extends StatefulWidget {
 class _JadwalPageState extends State<JadwalPage> {
   final Color primaryColor = const Color(0xFF1E9E8E);
 
-  // State untuk Tab Toggle (0 = Jadwal Obat, 1 = Jadwal Kontrol)
+  // 0 = Jadwal Obat, 1 = Jadwal Kontrol
   int _selectedTab = 0;
-  
-  // State untuk tanggal yang dipilih di kalender horizontal
-  int _selectedDateIndex = 3; // Default ke hari Kamis (index 3)
+
+  // Tanggal yang dipilih
+  DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
+
+  // Data dummy jadwal obat
+  final List<Map<String, dynamic>> _medicineSchedules = [
+    {
+      'time': '08:00',
+      'name': 'Amlodipine 5 mg',
+      'dosage': '1 tablet',
+      'taken': true,
+    },
+    {
+      'time': '13:00',
+      'name': 'Metformin 500 mg',
+      'dosage': '1 tablet',
+      'taken': false,
+    },
+    {
+      'time': '20:00',
+      'name': 'Atorvastatin 10 mg',
+      'dosage': '1 tablet',
+      'taken': false,
+    },
+  ];
+
+  // Data dummy jadwal kontrol
+  final List<Map<String, String>> _appointments = [
+    {
+      'date': '28',
+      'month': 'Nov 2026',
+      'day': 'Sabtu',
+      'time': '09:00',
+      'doctor': 'Dr. Andi Pratama',
+      'hospital': 'RS Sehat Jaya',
+      'location': 'Padang, Sumatera Barat',
+      'note': 'Pemeriksaan kesehatan rutin',
+    },
+    {
+      'date': '05',
+      'month': 'Des 2026',
+      'day': 'Sabtu',
+      'time': '10:30',
+      'doctor': 'Dr. Siti Rahma',
+      'hospital': 'Klinik Sehat Bersama',
+      'location': 'Padang, Sumatera Barat',
+      'note': 'Kontrol lanjutan',
+    },
+  ];
+
+  final List<String> _dayNames = [
+    'Sen',
+    'Sel',
+    'Rab',
+    'Kam',
+    'Jum',
+    'Sab',
+    'Min',
+  ];
+
+  final List<String> _monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
 
-      // 1. MENGGUNAKAN CUSTOMPAGETITLE DARI WIDGET.DART
-      appBar: const CustomPageTitle(
-        title: 'Jadwal',
-        showBackButton: false,
-      ),
+      appBar: const CustomPageTitle(title: 'Jadwal', showBackButton: false),
 
-      // 2. MENGGUNAKAN PAGEBODY DARI WIDGET.DART
-      body: PageBody(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
 
-                // --- TAB TOGGLE ---
-                _buildTabToggle(),
-                const SizedBox(height: 24),
+              // TAB JADWAL
+              _buildTabToggle(),
 
-                // --- KALENDER HORIZONTAL ---
-                _buildHorizontalCalendar(),
-                const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-                // --- GARIS PEMISAH (DIVIDER) ---
-                Divider(color: Colors.grey[300], thickness: 1),
-                const SizedBox(height: 16),
-
-                // --- JUDUL JADWAL OBAT ---
-                const Text(
-                  'Jadwal Obat',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Kamis, 24 Apr 2025',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 20),
-
-                // --- TIMELINE JADWAL ---
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.only(bottom: 80), // Spasi bawah untuk tombol
-                    children: [
-                      _buildTimelineItem(
-                        time: '08:00',
-                        medicine: 'Amlodipine 5 mg',
-                        dosage: '1 tablet',
-                        isTaken: true,
-                        isLast: false,
-                      ),
-                      _buildTimelineItem(
-                        time: '13:00',
-                        medicine: 'Metformin 500 mg',
-                        dosage: '1 tablet',
-                        isTaken: false,
-                        isLast: false,
-                      ),
-                      _buildTimelineItem(
-                        time: '20:00',
-                        medicine: 'Atorvastatin 10 mg',
-                        dosage: '1 tablet',
-                        isTaken: false,
-                        isLast: true, // Item terakhir, garis vertikalnya berhenti
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // --- TOMBOL TAMBAH JADWAL ---
-            Positioned(
-              bottom: 10, // Sedikit naik agar tidak terlalu mepet bawah
-              left: 0,
-              right: 0,
-              child: Center(
-                child: SizedBox(
-                  width: 200,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Navigasi ke halaman Tambah Jadwal
-                      debugPrint('Tambah Jadwal Ditekan');
-                    },
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text(
-                      'Tambah Jadwal',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      elevation: 4,
-                    ),
-                  ),
-                ),
+              // KONTEN BERDASARKAN TAB
+              Expanded(
+                child: _selectedTab == 0
+                    ? _buildMedicineSchedule()
+                    : _buildAppointmentSchedule(),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ==========================================
-  // WIDGET PENDUKUNG
+  // TAB JADWAL OBAT DAN JADWAL KONTROL
   // ==========================================
 
   Widget _buildTabToggle() {
     return Container(
-      height: 45,
+      height: 48,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedTab = 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _selectedTab == 0 ? primaryColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Jadwal Obat',
-                  style: TextStyle(
-                    color: _selectedTab == 0 ? Colors.white : Colors.grey[700],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedTab = 1),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _selectedTab == 1 ? primaryColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Jadwal Kontrol',
-                  style: TextStyle(
-                    color: _selectedTab == 1 ? Colors.white : Colors.grey[700],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          _buildTabItem('Jadwal Obat', 0),
+          _buildTabItem('Jadwal Kontrol', 1),
         ],
       ),
     );
   }
 
-  Widget _buildHorizontalCalendar() {
-    // Data dummy untuk kalender
-    final List<Map<String, String>> dates = [
-      {'day': 'Sen', 'date': '21'},
-      {'day': 'Sel', 'date': '22'},
-      {'day': 'Rab', 'date': '23'},
-      {'day': 'Kam', 'date': '24'},
-      {'day': 'Jum', 'date': '25'},
-      {'day': 'Sab', 'date': '26'},
-      {'day': 'Min', 'date': '27'},
-    ];
+  Widget _buildTabItem(String title, int index) {
+    final bool isSelected = _selectedTab == index;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedTab = index;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? primaryColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[700],
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // KONTEN JADWAL OBAT
+  // ==========================================
+
+  Widget _buildMedicineSchedule() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCalendar(),
+
+        const SizedBox(height: 18),
+
+        Divider(color: Colors.grey.shade300),
+
+        const SizedBox(height: 12),
+
+        Text(
+          'Jadwal Obat',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+
+        const SizedBox(height: 5),
+
+        Text(
+          _formatSelectedDate(_selectedDate),
+          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        ),
+
+        const SizedBox(height: 16),
+
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 12),
+            itemCount: _medicineSchedules.length,
+            itemBuilder: (context, index) {
+              final medicine = _medicineSchedules[index];
+
+              return _buildMedicineCard(
+                index: index,
+                time: medicine['time'],
+                name: medicine['name'],
+                dosage: medicine['dosage'],
+                isTaken: medicine['taken'],
+              );
+            },
+          ),
+        ),
+
+        _buildPrimaryButton(
+          icon: Icons.add,
+          title: 'Tambah Jadwal',
+          onPressed: () {
+            _showComingSoon('Form Tambah Jadwal');
+          },
+        ),
+
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  // ==========================================
+  // KALENDER HORIZONTAL
+  // ==========================================
+
+  Widget _buildCalendar() {
+    final DateTime today = DateUtils.dateOnly(DateTime.now());
+
+    // Awal minggu adalah hari Senin
+    final DateTime monday = today.subtract(Duration(days: today.weekday - 1));
 
     return Column(
       children: [
-        // Header Bulan
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.chevron_left, color: Colors.grey[600]),
-            const Text(
-              'Apr 2025',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              '${_monthNames[_selectedDate.month - 1]} ${_selectedDate.year}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[600]),
+            Text(
+              'Minggu ini',
+              style: TextStyle(
+                color: primaryColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 16),
-        
-        // List Tanggal
+
+        const SizedBox(height: 14),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(dates.length, (index) {
-            bool isSelected = _selectedDateIndex == index;
+          children: List.generate(7, (index) {
+            final date = monday.add(Duration(days: index));
+
+            final bool isSelected = DateUtils.isSameDay(date, _selectedDate);
+
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  _selectedDateIndex = index;
+                  _selectedDate = date;
                 });
               },
-              child: Container(
-                width: 40,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 39,
+                padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
                   color: isSelected ? primaryColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
@@ -240,17 +290,19 @@ class _JadwalPageState extends State<JadwalPage> {
                 child: Column(
                   children: [
                     Text(
-                      dates[index]['day']!,
+                      _dayNames[index],
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: isSelected ? Colors.white70 : Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(height: 4),
+
+                    const SizedBox(height: 6),
+
                     Text(
-                      dates[index]['date']!,
+                      '${date.day}',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: isSelected ? Colors.white : Colors.black87,
                       ),
@@ -265,112 +317,357 @@ class _JadwalPageState extends State<JadwalPage> {
     );
   }
 
-  Widget _buildTimelineItem({
+  String _formatSelectedDate(DateTime date) {
+    const days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
+
+    return '${days[date.weekday - 1]}, ${date.day} '
+        '${_monthNames[date.month - 1]} ${date.year}';
+  }
+
+  // ==========================================
+  // KARTU JADWAL OBAT
+  // ==========================================
+
+  Widget _buildMedicineCard({
+    required int index,
     required String time,
-    required String medicine,
+    required String name,
     required String dosage,
     required bool isTaken,
-    required bool isLast,
   }) {
-    return IntrinsicHeight(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- KOLOM KIRI (Titik & Garis Vertikal) ---
+          // WAKTU
           SizedBox(
-            width: 30,
-            child: Column(
-              children: [
-                // Titik (Dot)
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: isTaken ? primaryColor : Colors.grey[400],
-                    shape: BoxShape.circle,
-                  ),
+            width: 55,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
                 ),
-                // Garis Vertikal (Hanya tampil jika bukan item terakhir)
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: Colors.grey[300],
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
-          
-          // --- KOLOM KANAN (Informasi Obat) ---
+
+          // KARTU OBAT
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 12, bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Waktu
-                      Text(
-                        time,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      // Ikon Centang / Kosong
-                      Icon(
-                        isTaken ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: isTaken ? primaryColor : Colors.grey[400],
-                        size: 24,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Nama Obat & Dosis
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFFE8F5F2),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                    child: Row(
+                    child: Icon(
+                      Icons.medication_outlined,
+                      color: primaryColor,
+                      size: 25,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Ikon Bel / Jam
-                        Icon(Icons.notifications_none, size: 18, color: Colors.grey[600]),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              medicine,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          dosage,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isTaken
+                                ? const Color(0xFFE5F5EF)
+                                : const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            isTaken ? 'Sudah dikonfirmasi' : 'Menunggu',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isTaken
+                                  ? primaryColor
+                                  : Colors.orange[800],
                             ),
-                            Text(
-                              dosage,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
+                  ),
+
+                  // TOMBOL KONFIRMASI
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _medicineSchedules[index]['taken'] = !isTaken;
+                      });
+                    },
+                    icon: Icon(
+                      isTaken
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      color: isTaken ? primaryColor : Colors.grey[400],
+                      size: 25,
+                    ),
+                    tooltip: 'Ubah status konsumsi',
                   ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // KONTEN JADWAL KONTROL
+  // ==========================================
+
+  Widget _buildAppointmentSchedule() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Jadwal Kontrol Kesehatan',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+
+        const SizedBox(height: 6),
+
+        Text(
+          'Kelola jadwal pemeriksaan kesehatan Anda.',
+          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+        ),
+
+        const SizedBox(height: 20),
+
+        Expanded(
+          child: ListView.builder(
+            itemCount: _appointments.length,
+            itemBuilder: (context, index) {
+              final appointment = _appointments[index];
+
+              return _buildAppointmentCard(appointment);
+            },
+          ),
+        ),
+
+        _buildPrimaryButton(
+          icon: Icons.add,
+          title: 'Tambah Jadwal Kontrol',
+          onPressed: () {
+            _showComingSoon('Form Tambah Kontrol');
+          },
+        ),
+
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildAppointmentCard(Map<String, String> appointment) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 55,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      appointment['date']!,
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      appointment['month']!,
+                      style: TextStyle(color: primaryColor, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appointment['doctor']!,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    Text(
+                      appointment['hospital']!,
+                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 15, color: primaryColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${appointment['day']} • ${appointment['time']}',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const Divider(height: 24),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                color: Colors.grey[600],
+                size: 17,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  appointment['location']!,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            appointment['note']!,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // TOMBOL UTAMA
+  // ==========================================
+
+  Widget _buildPrimaryButton({
+    required IconData icon,
+    required String title,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white),
+        label: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          elevation: 1,
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // PESAN SEMENTARA
+  // ==========================================
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature akan dibuat pada tahap berikutnya.'),
+        backgroundColor: primaryColor,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

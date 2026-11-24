@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'user_role.dart';
+import 'signup.dart';
+import 'main.dart';
 
 class SignInPage extends StatefulWidget {
-  const SignInPage({super.key});
+  final UserRole userRole;
+
+  const SignInPage({super.key, required this.userRole});
 
   @override
   State<SignInPage> createState() => _SignInPageState();
@@ -10,7 +15,7 @@ class SignInPage extends StatefulWidget {
 class _SignInPageState extends State<SignInPage> {
   final Color primaryColor = const Color(0xFF1E9E8E);
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controller untuk mengambil input
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -44,7 +49,7 @@ class _SignInPageState extends State<SignInPage> {
                   // Logo / Ilustrasi kecil di atas
                   Icon(Icons.lock_person_rounded, size: 80, color: primaryColor),
                   const SizedBox(height: 24),
-                  
+
                   // Judul
                   const Text(
                     'Selamat Datang Kembali',
@@ -55,9 +60,47 @@ class _SignInPageState extends State<SignInPage> {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // Badge Role
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: primaryColor.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.userRole == UserRole.careRecipient
+                                ? Icons.personal_injury
+                                : Icons.health_and_safety,
+                            size: 16,
+                            color: primaryColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.userRole.displayName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Deskripsi sesuai role
                   Text(
-                    'Masuk untuk melanjutkan pemantauan obat Anda',
+                    widget.userRole == UserRole.careRecipient
+                        ? 'Masuk untuk melanjutkan pemantauan obat Anda'
+                        : 'Masuk untuk memantau jadwal obat pasien Anda',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
@@ -81,7 +124,7 @@ class _SignInPageState extends State<SignInPage> {
                     icon: Icons.lock_outline,
                     isPassword: true,
                   ),
-                  
+
                   // Lupa Password (Opsional)
                   Align(
                     alignment: Alignment.centerRight,
@@ -103,10 +146,11 @@ class _SignInPageState extends State<SignInPage> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          // TODO: Logika Autentikasi (Sign In)
+                          // TODO: Logika Autentikasi (Sign In) dengan role
+                          debugPrint('Role: ${widget.userRole.displayName}');
                           debugPrint('Email: ${_emailController.text}');
                           debugPrint('Password: ${_passwordController.text}');
-                          
+
                           // Sementara arahkan ke main.dart (Beranda) jika berhasil
                           // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainNavigationScreen()));
                         }
@@ -131,8 +175,12 @@ class _SignInPageState extends State<SignInPage> {
                       Text('Belum punya akun?', style: TextStyle(color: Colors.grey[600])),
                       TextButton(
                         onPressed: () {
-                          // TODO: Navigator.push ke SignUpPage
-                          // Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpPage()));
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SignUpPage(userRole: widget.userRole),
+                            ),
+                          );
                         },
                         child: Text(
                           'Daftar Sekarang',

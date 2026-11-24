@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'user_role.dart';
+import 'signin.dart';
 
 class SignUpPage extends StatefulWidget {
-  const SignUpPage({super.key});
+  final UserRole userRole;
+
+  const SignUpPage({super.key, required this.userRole});
 
   @override
   State<SignUpPage> createState() => _SignUpPageState();
@@ -46,7 +50,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   // Logo / Ilustrasi kecil di atas
                   Icon(Icons.person_add_alt_1_rounded, size: 80, color: primaryColor),
                   const SizedBox(height: 24),
-                  
+
                   // Judul
                   const Text(
                     'Buat Akun Baru',
@@ -57,9 +61,41 @@ class _SignUpPageState extends State<SignUpPage> {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // Badge Role
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: primaryColor.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(widget.userRole.icon, size: 16, color: primaryColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.userRole.displayName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Deskripsi sesuai role
                   Text(
-                    'Daftar untuk mulai memantau jadwal obat Anda',
+                    widget.userRole == UserRole.careRecipient
+                        ? 'Daftar untuk mulai memantau jadwal obat Anda'
+                        : 'Daftar untuk memantau jadwal obat pasien Anda',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
@@ -100,13 +136,14 @@ class _SignUpPageState extends State<SignUpPage> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          // TODO: Logika Autentikasi (Sign Up)
+                          // TODO: Logika Autentikasi (Sign Up) dengan role
+                          debugPrint('Role: ${widget.userRole.displayName}');
                           debugPrint('Nama: ${_nameController.text}');
                           debugPrint('Email: ${_emailController.text}');
                           debugPrint('Password: ${_passwordController.text}');
-                          
+
                           // Sementara arahkan kembali ke Sign In jika berhasil
-                          // Navigator.pop(context); 
+                          // Navigator.pop(context);
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -129,7 +166,12 @@ class _SignUpPageState extends State<SignUpPage> {
                       Text('Sudah punya akun?', style: TextStyle(color: Colors.grey[600])),
                       TextButton(
                         onPressed: () {
-                          Navigator.pop(context); // Kembali ke halaman sebelumnya (Sign In)
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SignInPage(userRole: widget.userRole),
+                            ),
+                          );
                         },
                         child: Text(
                           'Masuk',
@@ -147,7 +189,7 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Widget Reusable untuk TextField (Sama persis dengan signin.dart)
+  // Widget Reusable untuk TextField
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,

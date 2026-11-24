@@ -12,7 +12,7 @@ void main() {
 }
 
 class MediTrackApp extends StatelessWidget {
-  const MediTrackApp({Key? key}) : super(key: key);
+  const MediTrackApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class MediTrackApp extends StatelessWidget {
 // HALAMAN UTAMA (HOST NAVIGASI)
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({Key? key}) : super(key: key);
+  const MainNavigationScreen({super.key});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -85,7 +85,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 // ISI HALAMAN BERANDA (DIPINDAHKAN DARI TADI)
 // ==========================================
 class BerandaPage extends StatelessWidget {
-  const BerandaPage({Key? key}) : super(key: key);
+  const BerandaPage({super.key});
 
   final Color primaryColor = const Color(0xFF1E9E8E);
 
@@ -275,7 +275,7 @@ class BerandaPage extends StatelessWidget {
                     width: 8,
                     height: height.toDouble(),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   );
@@ -288,7 +288,7 @@ class BerandaPage extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: 0.85,
-              backgroundColor: Colors.white.withOpacity(0.3),
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 6,
             ),
@@ -380,8 +380,8 @@ class BerandaPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
               color: isTaken
-                  ? primaryColor.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.05),
+                  ? primaryColor.withValues(alpha: 0.1)
+                  : Colors.red.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(

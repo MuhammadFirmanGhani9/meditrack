@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'widget.dart'; // Import file widget.dart
 
 class ObatSayaPage extends StatefulWidget {
-  const ObatSayaPage({Key? key}) : super(key: key);
+  const ObatSayaPage({super.key});
 
   @override
   State<ObatSayaPage> createState() => _ObatSayaPageState();

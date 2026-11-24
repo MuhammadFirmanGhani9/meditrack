@@ -6,10 +6,10 @@ class CustomPageTitle extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
 
   const CustomPageTitle({
-    Key? key,
+    super.key,
     required this.title,
     this.showBackButton = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +44,10 @@ class PageBody extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   const PageBody({
-    Key? key,
+    super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16.0),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,10 +67,10 @@ class CustomBottomNavBar extends StatelessWidget {
   final Function(int) onTap;
 
   const CustomBottomNavBar({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

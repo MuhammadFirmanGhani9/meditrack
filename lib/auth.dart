@@ -4,7 +4,7 @@ import 'signup.dart';
 import 'main.dart';   
 
 class AuthPage extends StatelessWidget {
-  const AuthPage({Key? key}) : super(key: key);
+  const AuthPage({super.key});
 
   final Color primaryColor = const Color(0xFF1E9E8E);
   final Color textColor = const Color(0xFF2D3A3A);
@@ -76,7 +76,7 @@ class AuthPage extends StatelessWidget {
                       width: 200,
                       height: 200,
                       decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.1),
+                        color: primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'widget.dart';
 
 class ProfilPage extends StatefulWidget {
-  const ProfilPage({Key? key}) : super(key: key);
+  const ProfilPage({super.key});
 
   @override
   State<ProfilPage> createState() => _ProfilPageState();

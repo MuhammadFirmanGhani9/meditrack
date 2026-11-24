@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'widget.dart';
 
 class JadwalPage extends StatefulWidget {
-  const JadwalPage({Key? key}) : super(key: key);
+  const JadwalPage({super.key});
 
   @override
   State<JadwalPage> createState() => _JadwalPageState();

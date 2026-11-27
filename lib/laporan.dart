@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'widget.dart';
+import 'app_data.dart';
 
 class LaporanPage extends StatefulWidget {
   const LaporanPage({super.key});
@@ -12,141 +13,311 @@ class LaporanPage extends StatefulWidget {
 class _LaporanPageState extends State<LaporanPage> {
   final Color primaryColor = const Color(0xFF1E9E8E);
 
-  // Filter periode laporan
+  final AppData appData = AppData.instance;
+
   String _selectedPeriod = '7 Hari';
 
-  // Data dummy statistik
-  final int totalJadwal = 28;
-  final int totalDikonsumsi = 23;
-  final int totalBelumDikonfirmasi = 5;
+  // Menggabungkan tanggal dan waktu jadwal.
+  DateTime _scheduleDateTime(MedicineSchedule schedule) {
+    final parts = schedule.time.split(':');
 
-  // Data dummy konsumsi berdasarkan obat
-  final List<Map<String, dynamic>> _medicineReports = [
-    {'name': 'Amlodipine 5 mg', 'consumed': 10, 'total': 10},
-    {'name': 'Metformin 500 mg', 'consumed': 8, 'total': 10},
-    {'name': 'Atorvastatin 10 mg', 'consumed': 5, 'total': 8},
-  ];
+    return DateTime(
+      schedule.date.year,
+      schedule.date.month,
+      schedule.date.day,
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+    );
+  }
 
-  // Data grafik dummy
-  final Map<String, List<Map<String, dynamic>>> _chartData = {
-    '7 Hari': [
-      {'day': 'Sen', 'value': 65},
-      {'day': 'Sel', 'value': 90},
-      {'day': 'Rab', 'value': 75},
-      {'day': 'Kam', 'value': 100},
-      {'day': 'Jum', 'value': 80},
-      {'day': 'Sab', 'value': 60},
-      {'day': 'Min', 'value': 90},
-    ],
-    '30 Hari': [
-      {'day': 'M1', 'value': 75},
-      {'day': 'M2', 'value': 85},
-      {'day': 'M3', 'value': 65},
-      {'day': 'M4', 'value': 90},
-    ],
-    '3 Bulan': [
-      {'day': 'Sep', 'value': 70},
-      {'day': 'Okt', 'value': 80},
-      {'day': 'Nov', 'value': 90},
-    ],
-  };
+  // Mengambil jadwal sesuai periode laporan.
+  List<MedicineSchedule> get _filteredSchedules {
+    final now = DateTime.now();
+    DateTime startDate;
 
-  // Data dummy riwayat konsumsi
-  final List<Map<String, dynamic>> _history = [
-    {
-      'name': 'Amlodipine 5 mg',
-      'time': '08:00',
-      'date': '23 November 2026',
-      'status': 'Dikonfirmasi',
-    },
-    {
-      'name': 'Metformin 500 mg',
-      'time': '13:00',
-      'date': '23 November 2026',
-      'status': 'Menunggu',
-    },
-    {
-      'name': 'Atorvastatin 10 mg',
-      'time': '20:00',
-      'date': '22 November 2026',
-      'status': 'Dikonfirmasi',
-    },
-    {
-      'name': 'Amlodipine 5 mg',
-      'time': '08:00',
-      'date': '22 November 2026',
-      'status': 'Dikonfirmasi',
-    },
-  ];
+    switch (_selectedPeriod) {
+      case '30 Hari':
+        startDate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(days: 29));
+        break;
+      case '3 Bulan':
+        startDate = DateTime(now.year, now.month - 2, 1);
+        break;
+      default:
+        startDate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(days: 6));
+    }
+
+    final endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    return appData.medicineSchedules.where((schedule) {
+      final dateTime = _scheduleDateTime(schedule);
+
+      return !dateTime.isBefore(startDate) && !dateTime.isAfter(endDate);
+    }).toList();
+  }
+
+  // Jadwal yang sudah dikonfirmasi.
+  int get totalDikonsumsi {
+    return _filteredSchedules.where((item) => item.isTaken).length;
+  }
+
+  // Jadwal yang waktunya sudah lewat tetapi belum dikonfirmasi.
+  int get totalTerlewat {
+    final now = DateTime.now();
+
+    return _filteredSchedules.where((item) {
+      return !item.isTaken && !_scheduleDateTime(item).isAfter(now);
+    }).length;
+  }
+
+  // Jadwal yang waktunya belum tiba.
+  int get totalMenunggu {
+    final now = DateTime.now();
+
+    return _filteredSchedules.where((item) {
+      return !item.isTaken && _scheduleDateTime(item).isAfter(now);
+    }).length;
+  }
+
+  // Total jadwal yang sudah jatuh tempo.
+  int get totalJadwalJatuhTempo {
+    return totalDikonsumsi + totalTerlewat;
+  }
 
   double get adherencePercentage {
-    if (totalJadwal == 0) return 0;
-    return totalDikonsumsi / totalJadwal * 100;
+    if (totalJadwalJatuhTempo == 0) return 0;
+
+    return totalDikonsumsi / totalJadwalJatuhTempo * 100;
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _getStatus(MedicineSchedule schedule) {
+    if (schedule.isTaken) return 'Dikonfirmasi';
+
+    if (!_scheduleDateTime(schedule).isAfter(DateTime.now())) {
+      return 'Terlewat';
+    }
+
+    return 'Menunggu';
+  }
+
+  // Data ringkasan per obat.
+  List<Map<String, dynamic>> get _medicineReports {
+    final reports = <Map<String, dynamic>>[];
+
+    for (final medicine in appData.medicines) {
+      final schedules = _filteredSchedules
+          .where((item) => item.medicineId == medicine.id)
+          .toList();
+
+      if (schedules.isEmpty) continue;
+
+      final consumed = schedules.where((item) => item.isTaken).length;
+
+      final due = schedules.where((item) {
+        return !_scheduleDateTime(item).isAfter(DateTime.now());
+      }).length;
+
+      reports.add({'name': medicine.name, 'consumed': consumed, 'total': due});
+    }
+
+    return reports;
+  }
+
+  // Data grafik berdasarkan periode.
+  List<Map<String, dynamic>> get _chartData {
+    final now = DateTime.now();
+    final result = <Map<String, dynamic>>[];
+
+    if (_selectedPeriod == '7 Hari') {
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(Duration(days: i));
+
+        result.add(
+          _createChartItem(
+            label: _dayName(date.weekday),
+            date: date,
+            nextDate: date.add(const Duration(days: 1)),
+          ),
+        );
+      }
+    } else if (_selectedPeriod == '30 Hari') {
+      final start = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 29));
+
+      for (int i = 0; i < 5; i++) {
+        final date = start.add(Duration(days: i * 7));
+        final nextDate = date.add(const Duration(days: 7));
+
+        result.add(
+          _createChartItem(label: 'M${i + 1}', date: date, nextDate: nextDate),
+        );
+      }
+    } else {
+      for (int i = 2; i >= 0; i--) {
+        final date = DateTime(now.year, now.month - i, 1);
+        final nextDate = DateTime(date.year, date.month + 1, 1);
+
+        result.add(
+          _createChartItem(
+            label: _monthName(date.month),
+            date: date,
+            nextDate: nextDate,
+          ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  Map<String, dynamic> _createChartItem({
+    required String label,
+    required DateTime date,
+    required DateTime nextDate,
+  }) {
+    final schedules = appData.medicineSchedules.where((item) {
+      final scheduleDate = _scheduleDateTime(item);
+
+      return !scheduleDate.isBefore(date) &&
+          scheduleDate.isBefore(nextDate) &&
+          !scheduleDate.isAfter(DateTime.now());
+    }).toList();
+
+    final consumed = schedules.where((item) => item.isTaken).length;
+
+    final percentage = schedules.isEmpty
+        ? 0.0
+        : consumed / schedules.length * 100;
+
+    return {'day': label, 'value': percentage};
+  }
+
+  String _dayName(int weekday) {
+    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    return days[weekday - 1];
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+
+    return months[month - 1];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: const CustomPageTitle(title: 'Laporan', showBackButton: false),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPageDescription(),
-
-              const SizedBox(height: 20),
-
-              _buildAdherenceCard(),
-
-              const SizedBox(height: 18),
-
-              _buildStatistics(),
-
-              const SizedBox(height: 25),
-
-              _buildSectionTitle(
-                'Grafik Konsumsi Obat',
-                'Pantau perkembangan konsumsi obat Anda',
-              ),
-
-              const SizedBox(height: 14),
-
-              _buildChartCard(),
-
-              const SizedBox(height: 25),
-
-              _buildSectionTitle(
-                'Ringkasan per Obat',
-                'Persentase konsumsi setiap obat',
-              ),
-
-              const SizedBox(height: 14),
-
-              _buildMedicineReports(),
-
-              const SizedBox(height: 25),
-
-              _buildSectionTitle(
-                'Riwayat Konsumsi',
-                'Aktivitas konsumsi obat terbaru',
-              ),
-
-              const SizedBox(height: 14),
-
-              _buildHistory(),
-
-              const SizedBox(height: 20),
-            ],
+    return AnimatedBuilder(
+      animation: appData,
+      builder: (context, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+          appBar: const CustomPageTitle(
+            title: 'Laporan',
+            showBackButton: false,
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPageDescription(),
+
+                  const SizedBox(height: 20),
+
+                  _buildAdherenceCard(),
+
+                  const SizedBox(height: 18),
+
+                  _buildStatistics(),
+
+                  const SizedBox(height: 25),
+
+                  _buildSectionTitle(
+                    'Grafik Konsumsi Obat',
+                    'Pantau perkembangan konsumsi obat Anda',
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _buildChartCard(),
+
+                  const SizedBox(height: 25),
+
+                  _buildSectionTitle(
+                    'Ringkasan per Obat',
+                    'Persentase konsumsi setiap obat',
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _buildMedicineReports(),
+
+                  const SizedBox(height: 25),
+
+                  _buildSectionTitle(
+                    'Riwayat Konsumsi',
+                    'Aktivitas konsumsi obat terbaru',
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _buildHistory(),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
-
-  // DESKRIPSI HALAMAN
 
   Widget _buildPageDescription() {
     return Column(
@@ -164,8 +335,6 @@ class _LaporanPageState extends State<LaporanPage> {
       ],
     );
   }
-
-  // KARTU KEPATUHAN
 
   Widget _buildAdherenceCard() {
     final percentage = adherencePercentage;
@@ -188,9 +357,7 @@ class _LaporanPageState extends State<LaporanPage> {
               fontWeight: FontWeight.w500,
             ),
           ),
-
           const SizedBox(height: 12),
-
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -212,9 +379,7 @@ class _LaporanPageState extends State<LaporanPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
@@ -224,20 +389,15 @@ class _LaporanPageState extends State<LaporanPage> {
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
-
           const SizedBox(height: 12),
-
           Text(
-            '$totalDikonsumsi dari $totalJadwal jadwal konsumsi '
-            'telah dikonfirmasi.',
+            '$totalDikonsumsi dari $totalJadwalJatuhTempo jadwal yang jatuh tempo telah dikonfirmasi.',
             style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
         ],
       ),
     );
   }
-
-  // KARTU STATISTIK
 
   Widget _buildStatistics() {
     return Row(
@@ -251,16 +411,14 @@ class _LaporanPageState extends State<LaporanPage> {
             background: const Color(0xFFE5F5EF),
           ),
         ),
-
         const SizedBox(width: 12),
-
         Expanded(
           child: _buildStatCard(
-            title: 'Menunggu',
-            value: '$totalBelumDikonfirmasi',
-            icon: Icons.access_time,
-            color: Colors.orange,
-            background: const Color(0xFFFFF3E0),
+            title: 'Terlewat',
+            value: '$totalTerlewat',
+            icon: Icons.cancel_outlined,
+            color: Colors.red,
+            background: const Color(0xFFFFEBEE),
           ),
         ),
       ],
@@ -293,23 +451,17 @@ class _LaporanPageState extends State<LaporanPage> {
             ),
             child: Icon(icon, color: color, size: 21),
           ),
-
           const SizedBox(height: 12),
-
           Text(
             value,
             style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
           ),
-
           const SizedBox(height: 3),
-
           Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
     );
   }
-
-  // JUDUL BAGIAN
 
   Widget _buildSectionTitle(String title, String subtitle) {
     return Column(
@@ -325,10 +477,8 @@ class _LaporanPageState extends State<LaporanPage> {
     );
   }
 
-  // GRAFIK KONSUMSI
-
   Widget _buildChartCard() {
-    final chartItems = _chartData[_selectedPeriod]!;
+    final chartItems = _chartData;
 
     return Container(
       width: double.infinity,
@@ -363,15 +513,13 @@ class _LaporanPageState extends State<LaporanPage> {
               );
             }).toList(),
           ),
-
           const SizedBox(height: 22),
-
           SizedBox(
             height: 155,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: chartItems.map((item) {
-                final int value = item['value'];
+                final double value = item['value'];
 
                 return Expanded(
                   child: Padding(
@@ -380,15 +528,13 @@ class _LaporanPageState extends State<LaporanPage> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          '$value%',
+                          '${value.toStringAsFixed(0)}%',
                           style: TextStyle(
                             fontSize: 10,
                             color: Colors.grey[600],
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
                         Expanded(
                           child: Align(
                             alignment: Alignment.bottomCenter,
@@ -406,9 +552,7 @@ class _LaporanPageState extends State<LaporanPage> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         Text(
                           item['day'],
                           style: TextStyle(
@@ -423,11 +567,9 @@ class _LaporanPageState extends State<LaporanPage> {
               }).toList(),
             ),
           ),
-
           const SizedBox(height: 12),
-
           Text(
-            'Grafik ilustrasi berdasarkan data dummy.',
+            'Grafik dihitung berdasarkan jadwal yang sudah jatuh tempo.',
             style: TextStyle(fontSize: 10, color: Colors.grey[500]),
           ),
         ],
@@ -435,14 +577,18 @@ class _LaporanPageState extends State<LaporanPage> {
     );
   }
 
-  // RINGKASAN PER OBAT
-
   Widget _buildMedicineReports() {
+    final reports = _medicineReports;
+
+    if (reports.isEmpty) {
+      return _buildEmptyState('Belum ada data konsumsi obat.');
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
       child: Column(
-        children: _medicineReports.map((medicine) {
+        children: reports.map((medicine) {
           final int consumed = medicine['consumed'];
           final int total = medicine['total'];
           final double percentage = total == 0 ? 0 : consumed / total;
@@ -474,9 +620,7 @@ class _LaporanPageState extends State<LaporanPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 9),
-
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
@@ -486,9 +630,7 @@ class _LaporanPageState extends State<LaporanPage> {
                     valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   '$consumed dari $total jadwal dikonfirmasi',
                   style: TextStyle(fontSize: 11, color: Colors.grey[600]),
@@ -501,15 +643,38 @@ class _LaporanPageState extends State<LaporanPage> {
     );
   }
 
-  // RIWAYAT KONSUMSI
-
   Widget _buildHistory() {
+    final history = List<MedicineSchedule>.from(_filteredSchedules);
+
+    history.sort((a, b) {
+      return _scheduleDateTime(b).compareTo(_scheduleDateTime(a));
+    });
+
+    if (history.isEmpty) {
+      return _buildEmptyState('Belum ada riwayat konsumsi obat.');
+    }
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: _cardDecoration(),
       child: Column(
-        children: _history.map((item) {
-          final bool isConfirmed = item['status'] == 'Dikonfirmasi';
+        children: history.map((schedule) {
+          final medicine = appData.getMedicineById(schedule.medicineId);
+          final status = _getStatus(schedule);
+          final isConfirmed = status == 'Dikonfirmasi';
+          final isMissed = status == 'Terlewat';
+
+          final statusColor = isConfirmed
+              ? primaryColor
+              : isMissed
+              ? Colors.red
+              : Colors.orange[800]!;
+
+          final statusBackground = isConfirmed
+              ? const Color(0xFFE5F5EF)
+              : isMissed
+              ? const Color(0xFFFFEBEE)
+              : const Color(0xFFFFF3E0);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 15),
@@ -529,49 +694,39 @@ class _LaporanPageState extends State<LaporanPage> {
                     size: 22,
                   ),
                 ),
-
                 const SizedBox(width: 11),
-
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item['name'],
+                        medicine?.name ?? 'Obat tidak ditemukan',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(height: 4),
-
                       Text(
-                        '${item['time']} • ${item['date']}',
+                        '${schedule.time} • ${_formatDate(schedule.date)}',
                         style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                       ),
-
                       const SizedBox(height: 6),
-
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: isConfirmed
-                              ? const Color(0xFFE5F5EF)
-                              : const Color(0xFFFFF3E0),
+                          color: statusBackground,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          item['status'],
+                          status,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: isConfirmed
-                                ? primaryColor
-                                : Colors.orange[800],
+                            color: statusColor,
                           ),
                         ),
                       ),
@@ -586,7 +741,24 @@ class _LaporanPageState extends State<LaporanPage> {
     );
   }
 
-  // DEKORASI KARTU
+  Widget _buildEmptyState(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(25),
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          Icon(Icons.insert_chart_outlined, color: Colors.grey[400], size: 35),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
